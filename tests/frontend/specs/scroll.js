@@ -11,6 +11,62 @@ describe('scroll when focus line is out of viewport', function () {
     this.timeout(20000);
   });
 
+  context('when user presses any arrow keys on a line above the viewport', function(){
+    context('and scroll percentage config is set to 0.2 on settings.json', function(){
+      var focusLine = 10;
+      before(function (done) {
+        setScrollPercentageWhenFocusLineIsOutOfViewport(0.2);
+
+        placeCaretInTheBeginningOfLine(focusLine); // place caret in the 10th line
+        scrollEditorToBottomOfPad();
+        // need the timeout because it needs to wait the scrollEditorToBottomOfPad scrolls all the way down
+        setTimeout(function() {
+          // warning: even pressing right arrow, the caret does not change of position
+          pressRightArrow();
+          done();
+        }, 1000);
+      });
+
+      it('keeps the focus line scrolled 20% from the top of the viewport', function (done) {
+        // default behavior is to put the line in the top of viewport, but as
+        // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.2, we have an extra 20% of lines scrolled
+        // (2 lines, which are the 20% of the 10 that are visible on viewport)
+        var firstLineOfViewport = getFirstLineVisibileOfViewport();
+        var lineScrolledToTheMiddleOfViewport = firstLineOfViewport + 2 === focusLine;
+        expect(lineScrolledToTheMiddleOfViewport).to.be(true);
+        done();
+      });
+    });
+  });
+
+  context('when user presses any arrow keys on a line bellow the viewport', function(){
+    context('and scroll percentage config is set to 0.7 on settings.json', function(){
+      var focusLine = 50;
+      before(function (done) {
+        setScrollPercentageWhenFocusLineIsOutOfViewport(0.7);
+
+        // firstly, scroll to make the focusLine visible. After that, scroll to make it out of viewport
+        scrollEditorToTopOfPad();
+        placeCaretAtTheEndOfLine(focusLine); // place caret in the 50th line
+        setTimeout(function() {
+          // warning: even pressing right arrow, the caret does not change of position
+          pressLeftArrow();
+          done();
+        }, 1000);
+      });
+
+      it('keeps the focus line scrolled 70% from the bottom of the viewport', function (done) {
+        // default behavior is to put the line in the top of viewport, but as
+        // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.7, we have an extra 70% of lines scrolled
+        // (7 lines, which are the 70% of the 10 that are visible on viewport)
+        var lastLineOfViewport = getLastLineVisibleOfViewport();
+        var lineScrolledSevenLinesFromTheBottomOfViewport = lastLineOfViewport - 7 === focusLine;
+        expect(lineScrolledSevenLinesFromTheBottomOfViewport).to.be(true);
+        done();
+      });
+    });
+  });
+
   context('when user edits the last line of viewport', function(){
     context('and scroll percentage config is set to 0 on settings.json', function(){
       var lastLineOfViewportBeforeEnter = 10;
@@ -19,6 +75,7 @@ describe('scroll when focus line is out of viewport', function () {
         setScrollPercentageWhenFocusLineIsOutOfViewport(0);
 
         // make sure the last line on viewport is the 10th one
+        scrollEditorToTopOfPad();
         placeCaretAtTheEndOfLine(lastLineOfViewportBeforeEnter);
         pressEnter();
       });
@@ -124,6 +181,8 @@ describe('scroll when focus line is out of viewport', function () {
   var LINES_OF_PAD = 100;
   var ENTER = 13;
   var BACKSPACE = 9;
+  var LEFT_ARROW = 37;
+  var RIGHT_ARROW = 39;
   var LINES_ON_VIEWPORT = 10;
 
   var cleanPad = function(callback) {
@@ -186,6 +245,11 @@ describe('scroll when focus line is out of viewport', function () {
     helper.selectLines($targetLine, $targetLine, lineLength, lineLength);
   };
 
+  var placeCaretInTheBeginningOfLine = function(lineNum) {
+    var $targetLine = getLine(lineNum);
+    helper.selectLines($targetLine, $targetLine, 0, 0);
+  };
+
   var getFirstLineVisibileOfViewport = function() {
     return  _.find(_.range(0, LINES_OF_PAD - 1), isLineOnViewport);
   };
@@ -204,6 +268,7 @@ describe('scroll when focus line is out of viewport', function () {
     }
     var e = inner$.Event(evtType);
     e.keyCode = keyCode;
+    e.which = keyCode; // etherpad listens to 'which'
     inner$("#innerdocbody").trigger(e);
   };
 
@@ -213,6 +278,14 @@ describe('scroll when focus line is out of viewport', function () {
 
   var pressBackspace = function() {
     pressKey(BACKSPACE);
+  };
+
+  var pressRightArrow = function() {
+    pressKey(RIGHT_ARROW);
+  };
+
+  var pressLeftArrow = function() {
+    pressKey(LEFT_ARROW);
   };
 
   var isLineOnViewport = function(lineNumber) {
@@ -229,7 +302,7 @@ describe('scroll when focus line is out of viewport', function () {
 
     // position relative to the current viewport
     var linePositionTopOnViewport = linePosition.bottom - scrolltop + iframePadTop;
-    var linePositionBottomOnViewport = linePosition.bottom - scrolltop + iframePadTop;
+    var linePositionBottomOnViewport = linePosition.bottom - scrolltop;
     var lineAboveViewportTop = linePositionTopOnViewport <= 0;
     var lineBelowViewportBottom = linePositionBottomOnViewport > getClientHeight();
 
