@@ -4012,7 +4012,9 @@ function Ace2Inner(){
 
           }, 200);
         }
-        if((evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40) && type == 'keydown'){
+
+        // scroll to viewport when user presses arrow keys and caret is out of the viewport
+        if(evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40){
           var node = rep.lines.atIndex(rep.selStart[0]).lineNode;
           scrollNodeVerticallyIntoView(node);
         }
@@ -5254,7 +5256,14 @@ function Ace2Inner(){
   function scrollYPageWithAnimation(win, pixelsToScroll, durationOfAnimationToShowFocusline)
   {
     var outerDocBody = win.document.getElementById("outerdocbody");
+
+    // it works on chrome
     $(outerDocBody).animate({
+      scrollTop: '+=' + pixelsToScroll
+    }, durationOfAnimationToShowFocusline);
+
+    // it works on firefox
+    $(outerDocBody).parent().animate({
       scrollTop: '+=' + pixelsToScroll
     }, durationOfAnimationToShowFocusline);
   }
