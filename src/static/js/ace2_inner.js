@@ -4013,8 +4013,13 @@ function Ace2Inner(){
         }
 
         // scroll to viewport when user presses arrow keys and caret is out of the viewport
-        if(evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40){
-          var node = rep.lines.atIndex(rep.selStart[0]).lineNode;
+        if((evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40) && type == 'keyup'){
+          // use jQuery to avoid error of compatibility with Microsoft IE and Edge (javascript closest)
+          // we use getSelection() instead of rep to get the caret position. This avoids errors like when
+          // the caret position is not synchronized with the rep. For example, when an user presses arrow
+          // down to scroll the pad without releasing the key. When the key is released the rep is not
+          // synchronized, so we don't get the the right node where caret it
+          var node = $(document.getSelection().anchorNode).closest('div').get(0);
           scrollNodeVerticallyIntoView(node);
         }
 

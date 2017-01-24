@@ -258,10 +258,12 @@ describe('scroll when focus line is out of viewport', function () {
     return  _.find(_.range(LINES_OF_PAD - 1, 0, -1), isLineOnViewport);
   };
 
-  var pressKey = function(keyCode){
+  var pressKey = function(keyCode, eventIsKeyUp){
     var inner$ = helper.padInner$;
     var evtType;
-    if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
+    if(eventIsKeyUp){
+      evtType = "keyup";
+    }else if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
       evtType = "keypress";
     }else{
       evtType = "keydown";
@@ -280,12 +282,14 @@ describe('scroll when focus line is out of viewport', function () {
     pressKey(BACKSPACE);
   };
 
+  // ace2_inner listens to keyUp when user presses arrows
   var pressRightArrow = function() {
-    pressKey(RIGHT_ARROW);
+    pressKey(RIGHT_ARROW, true);
   };
 
+  // ace2_inner listens to keyUp when user presses arrows
   var pressLeftArrow = function() {
-    pressKey(LEFT_ARROW);
+    pressKey(LEFT_ARROW, true);
   };
 
   var isLineOnViewport = function(lineNumber) {
