@@ -22,7 +22,7 @@ describe('scroll when focus line is out of viewport', function () {
         // need the timeout because it needs to wait the scrollEditorToBottomOfPad scrolls all the way down
         setTimeout(function() {
           // warning: even pressing right arrow, the caret does not change of position
-          pressRightArrow();
+          pressAndReleaseRightArrow();
           done();
         }, 1000);
       });
@@ -50,7 +50,7 @@ describe('scroll when focus line is out of viewport', function () {
         placeCaretAtTheEndOfLine(focusLine); // place caret in the 50th line
         setTimeout(function() {
           // warning: even pressing right arrow, the caret does not change of position
-          pressLeftArrow();
+          pressAndReleaseLeftArrow();
           done();
         }, 1000);
       });
@@ -258,16 +258,23 @@ describe('scroll when focus line is out of viewport', function () {
     return  _.find(_.range(LINES_OF_PAD - 1, 0, -1), isLineOnViewport);
   };
 
-  var pressKey = function(keyCode, eventIsKeyUp){
+  var pressKey = function(keyCode){
     var inner$ = helper.padInner$;
     var evtType;
-    if(eventIsKeyUp){
-      evtType = "keyup";
-    }else if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
+    if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
       evtType = "keypress";
     }else{
       evtType = "keydown";
     }
+    var e = inner$.Event(evtType);
+    e.keyCode = keyCode;
+    e.which = keyCode; // etherpad listens to 'which'
+    inner$("#innerdocbody").trigger(e);
+  };
+
+  var releaseKey = function(keyCode){
+    var inner$ = helper.padInner$;
+    var evtType = "keyup";
     var e = inner$.Event(evtType);
     e.keyCode = keyCode;
     e.which = keyCode; // etherpad listens to 'which'
@@ -282,14 +289,14 @@ describe('scroll when focus line is out of viewport', function () {
     pressKey(BACKSPACE);
   };
 
-  // ace2_inner listens to keyUp when user presses arrows
-  var pressRightArrow = function() {
-    pressKey(RIGHT_ARROW, true);
+  var pressAndReleaseRightArrow = function() {
+    pressKey(RIGHT_ARROW);
+    releaseKey(RIGHT_ARROW);
   };
 
-  // ace2_inner listens to keyUp when user presses arrows
-  var pressLeftArrow = function() {
-    pressKey(LEFT_ARROW, true);
+  var pressAndReleaseLeftArrow = function() {
+    pressKey(LEFT_ARROW);
+    releaseKey(LEFT_ARROW);
   };
 
   var isLineOnViewport = function(lineNumber) {

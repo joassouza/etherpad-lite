@@ -129,6 +129,8 @@ function Ace2Inner(){
   var console = (DEBUG && window.console);
   var documentAttributeManager;
 
+  var arrowKeyWasReleased = true;
+
   if (!window.console)
   {
     var names = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml", "group", "groupEnd", "time", "timeEnd", "count", "trace", "profile", "profileEnd"];
@@ -4014,14 +4016,21 @@ function Ace2Inner(){
         }
 
         // scroll to viewport when user presses arrow keys and caret is out of the viewport
-        if((evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40) && type == 'keyup'){
-          // use jQuery to avoid error of compatibility with Microsoft IE and Edge (javascript closest)
-          // we use getSelection() instead of rep to get the caret position. This avoids errors like when
-          // the caret position is not synchronized with the rep. For example, when an user presses arrow
-          // down to scroll the pad without releasing the key. When the key is released the rep is not
-          // synchronized, so we don't get the the right node where caret it
-          var node = $(document.getSelection().anchorNode).closest('div').get(0);
-          scrollNodeVerticallyIntoView(node);
+        if((evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40)){
+          // we use arrowKeyWasReleased to avoid triggering the animation when a key is continuously pressed
+          // this makes the scroll smooth
+          if (type == 'keyup') arrowKeyWasReleased = true;
+          if (type == 'keydown' && arrowKeyWasReleased){
+            arrowKeyWasReleased = false;
+
+            // use jQuery to avoid error of compatibility with Microsoft IE and Edge (javascript closest)
+            // we use getSelection() instead of rep to get the caret position. This avoids errors like when
+            // the caret position is not synchronized with the rep. For example, when an user presses arrow
+            // down to scroll the pad without releasing the key. When the key is released the rep is not
+            // synchronized, so we don't get the the right node where caret it.
+            var node = $(document.getSelection().anchorNode).closest('div').get(0);
+            scrollNodeVerticallyIntoView(node);
+          }
         }
       }
 
