@@ -16,15 +16,13 @@ describe('scroll when focus line is out of viewport', function () {
       var focusLine = 10;
       before(function (done) {
         setScrollPercentageWhenFocusLineIsOutOfViewport(0.2);
-
-        placeCaretInTheBeginningOfLine(focusLine); // place caret in the 10th line
         scrollEditorToBottomOfPad();
-        // need the timeout because it needs to wait the scrollEditorToBottomOfPad scrolls all the way down
-        setTimeout(function() {
+
+        placeCaretInTheBeginningOfLine(focusLine, function(){ // place caret in the 10th line
           // warning: even pressing right arrow, the caret does not change of position
           pressAndReleaseRightArrow();
           done();
-        }, 1000);
+        });
       });
 
       it('keeps the focus line scrolled 20% from the top of the viewport', function (done) {
@@ -175,6 +173,52 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
+  context('when user places the caret at the last line visible of viewport', function(){
+    var focusLine = 9;
+    context('and scroll percentage config is set to 0 on settings.json', function(){
+      before(function (done) {
+        // reset to the default value
+        setScrollPercentageWhenFocusLineIsOutOfViewport(0);
+
+        placeCaretInTheBeginningOfLine(0, function(){ // reset caret position
+          scrollEditorToTopOfPad();
+          placeCaretInTheBeginningOfLine(focusLine, done); // place caret in the 9th line
+        });
+
+      });
+
+      it('does not scroll', function(done){
+        setTimeout(function() {
+          var lastLineOfViewport = getLastLineVisibleOfViewport();
+          var lineDoesNotScroll = lastLineOfViewport === focusLine;
+          expect(lineDoesNotScroll).to.be(true);
+          done();
+        }, 1000);
+      });
+    });
+    context('and scroll percentage config is set to 0.5 on settings.json', function(){
+      before(function (done) {
+        setScrollPercentageWhenFocusLineIsOutOfViewport(0.5);
+        scrollEditorToTopOfPad();
+        placeCaretInTheBeginningOfLine(0, function(){ // reset caret position
+          // this timeout inside a callback is ugly but it necessary to give time to aceSelectionChange
+          // realizes that the selection has been changed
+          setTimeout(function() {
+            placeCaretInTheBeginningOfLine(focusLine, done); // place caret in the 9th line
+          }, 1000);
+        });
+      });
+
+      it('scrolls line to 50% of the viewport', function(done){
+        helper.waitFor(function(){
+          var lastLineOfViewport = getLastLineVisibleOfViewport();
+          var lastLinesScrolledFiveLinesUp = lastLineOfViewport - 5 === focusLine;
+          return lastLinesScrolledFiveLinesUp;
+        }).done(done);
+      });
+    });
+  });
+
   /* ********************* Helper functions/constants ********************* */
   var TOP_OF_PAGE = 0;
   var BOTTOM_OF_PAGE = 5000; // we use a big value to force the page to be scrolled all the way down
@@ -235,7 +279,7 @@ describe('scroll when focus line is out of viewport', function () {
 
   var getLine = function(lineNum) {
     var inner$ = helper.padInner$;
-    var $line = inner$("div").slice(lineNum, lineNum + 1);
+    var $line = inner$("div").eq(lineNum);
     return $line;
   };
 
@@ -245,9 +289,21 @@ describe('scroll when focus line is out of viewport', function () {
     helper.selectLines($targetLine, $targetLine, lineLength, lineLength);
   };
 
-  var placeCaretInTheBeginningOfLine = function(lineNum) {
+  var placeCaretInTheBeginningOfLine = function(lineNum, cb) {
     var $targetLine = getLine(lineNum);
     helper.selectLines($targetLine, $targetLine, 0, 0);
+    helper.waitFor(function() {
+      var $lineWhereCaretIs = getLineWhereCaretIs();
+      if($targetLine.get(0) === $lineWhereCaretIs.get(0)) debugger
+      return $targetLine.get(0) === $lineWhereCaretIs.get(0);
+    }).done(cb);
+  };
+
+  var getLineWhereCaretIs = function() {
+    var inner$ = helper.padInner$;
+    var nodeWhereCaretIs = inner$.document.getSelection().anchorNode;
+    var $lineWhereCaretIs = $(nodeWhereCaretIs).closest("div");
+    return $lineWhereCaretIs;
   };
 
   var getFirstLineVisibileOfViewport = function() {
@@ -306,7 +362,7 @@ describe('scroll when focus line is out of viewport', function () {
     var iframePadTop = 8;
     var inner$ = helper.padInner$;
     var outer$ = helper.padOuter$;
-    var $line = inner$("div").slice(lineNumber, lineNumber + 1);
+    var $line = getLine(lineNumber);
     var linePosition = $line.get(0).getBoundingClientRect();
     var scrollTopFirefox = outer$('#outerdocbody').parent().scrollTop(); // works only on firefox
     var scrolltop = outer$('#outerdocbody').scrollTop() || scrollTopFirefox;
