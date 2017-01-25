@@ -2916,6 +2916,22 @@ function Ace2Inner(){
         documentAttributeManager: documentAttributeManager,
       });
 
+      // when the caret is placed at the last line visible of the viewport, it scrolls
+      // a percentage of viewport height defined by scrollWhenFocusLineIsOutOfViewport.percentage.
+      // When scrollWhenFocusLineIsOutOfViewport.percentage is 0, it keeps the default behavior
+      // that does not scroll at all.
+      var edgeLinesVisibleOnViewport = getVisibleLineRange();
+      var lastLineVisibleOfViewport = edgeLinesVisibleOnViewport[1];
+      var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineVisibleOfViewport;
+      if(caretIsInThelastLineVisibleOfViewport){
+        var win = outerWin;
+        var node = rep.lines.atIndex(lastLineVisibleOfViewport).lineNode;
+
+        // when scrollWhenFocusLineIsOutOfViewport.percentage is 0, pixelsToScroll is 0
+        var pixelsToScroll = getPixelsRelativeToPercentageOfViewport(node);
+        scrollYPage(win, pixelsToScroll);
+      }
+
       return true;
       //console.log("selStart: %o, selEnd: %o, focusAtStart: %s", rep.selStart, rep.selEnd,
       //String(!!rep.selFocusAtStart));
@@ -3285,7 +3301,7 @@ function Ace2Inner(){
     var top = dom.offsetTop;
     var height = dom.offsetHeight;
     var obj = (destObj || {});
-    obj.top = top;
+    obj.top = top + iframePadTop;
     obj.bottom = (top + height);
     return obj;
   }
@@ -3312,11 +3328,11 @@ function Ace2Inner(){
     });
     var end = rep.lines.search(function(e)
     {
-      return getLineEntryTopBottom(e, obj).top >= viewport.bottom;
+      return getLineEntryTopBottom(e, obj).bottom > viewport.bottom;
     });
     if (end < start) end = start; // unlikely
     //console.log(start+","+end);
-    return [start, end];
+    return [start, end - 1];
   }
 
   function getVisibleCharRange()
