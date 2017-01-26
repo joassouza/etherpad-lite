@@ -2918,16 +2918,23 @@ function Ace2Inner(){
       // when the caret is placed at the last line visible of the viewport, it scrolls
       // a percentage of viewport height defined by scrollWhenFocusLineIsOutOfViewport.percentage.
       // When scrollWhenFocusLineIsOutOfViewport.percentage is 0, it keeps the default behavior
-      // that does not scroll at all.
+      // that does not scroll at all
       var edgeLinesVisibleOnViewport = getVisibleLineRange();
       var lastLineVisibleOfViewport = edgeLinesVisibleOnViewport[1];
       var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineVisibleOfViewport;
-      if(caretIsInThelastLineVisibleOfViewport){
+
+      // it scrolls only in the last line if this one is in the bottom of the viewport.
+      // E.g., when there is only one line in the pad, this line(div) is the last line of
+      // the viewport, but it is not in the bottom of the viewport, so it should not scroll.
+      // This error happens when it has a plugin of pagination, like ep_page_view
+      var linesOfPad = rep.lines.length();
+      var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport;
+
+      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport){
         var win = outerWin;
-        var node = rep.lines.atIndex(lastLineVisibleOfViewport).lineNode;
 
         // when scrollWhenFocusLineIsOutOfViewport.percentage is 0, pixelsToScroll is 0
-        var pixelsToScroll = getPixelsRelativeToPercentageOfViewport(node);
+        var pixelsToScroll = getPixelsRelativeToPercentageOfViewport();
         scrollYPage(win, pixelsToScroll);
       }
 
@@ -3301,7 +3308,7 @@ function Ace2Inner(){
     var height = dom.offsetHeight;
     var obj = (destObj || {});
     obj.top = top + iframePadTop;
-    obj.bottom = (top + height);
+    obj.bottom = (obj.top + height);
     return obj;
   }
 
@@ -3327,7 +3334,7 @@ function Ace2Inner(){
     });
     var end = rep.lines.search(function(e)
     {
-      return getLineEntryTopBottom(e, obj).bottom > viewport.bottom;
+      return getLineEntryTopBottom(e, obj).top >= viewport.bottom;
     });
     if (end < start) end = start; // unlikely
     //console.log(start+","+end);
@@ -4042,7 +4049,7 @@ function Ace2Inner(){
             // we use getSelection() instead of rep to get the caret position. This avoids errors like when
             // the caret position is not synchronized with the rep. For example, when an user presses arrow
             // down to scroll the pad without releasing the key. When the key is released the rep is not
-            // synchronized, so we don't get the the right node where caret it.
+            // synchronized, so we don't get the right node where caret it.
             var node = $(document.getSelection().anchorNode).closest('div').get(0);
             scrollNodeVerticallyIntoView(node);
           }
@@ -5207,12 +5214,12 @@ function Ace2Inner(){
 
     if (distBelowTop < 0)
     {
-      var pixelsToScroll   = distBelowTop - getPixelsRelativeToPercentageOfViewport(node);
+      var pixelsToScroll = distBelowTop - getPixelsRelativeToPercentageOfViewport();
       scrollYPage(win, pixelsToScroll);
     }
     else if (distAboveBottom < 0)
     {
-      var pixelsToScroll = -distAboveBottom + getPixelsRelativeToPercentageOfViewport(node);
+      var pixelsToScroll = -distAboveBottom + getPixelsRelativeToPercentageOfViewport();
       scrollYPage(win, pixelsToScroll);
     }
   }
@@ -5250,12 +5257,12 @@ function Ace2Inner(){
   // By default, when user makes an edition in a line out of viewport, this line goes
   // to the edge of viewport. This function gets the extra pixels necessary to get the
   // caret line in a position X relative to Y% viewport.
-  function getPixelsRelativeToPercentageOfViewport(node)
+  function getPixelsRelativeToPercentageOfViewport()
   {
     var pixels = 0;
     var scrollPercentageRelativeToViewport = parent.parent.clientVars.scrollWhenFocusLineIsOutOfViewport.percentage;
     if(scrollPercentageRelativeToViewport > 0 && scrollPercentageRelativeToViewport <= 1){
-      pixels = ( getInnerHeight() * scrollPercentageRelativeToViewport ) - node.offsetHeight;
+      pixels = parseInt(getInnerHeight() * scrollPercentageRelativeToViewport);
     }
     return pixels;
   }
