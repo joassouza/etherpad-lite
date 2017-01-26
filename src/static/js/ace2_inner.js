@@ -2929,7 +2929,7 @@ function Ace2Inner(){
       // the viewport, but it is not in the bottom of the viewport, so it should not scroll.
       // This error happens when it has a plugin of pagination, like ep_page_view
       var linesOfPad = rep.lines.length();
-      var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport;
+      var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport + 1;
 
       if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport){
         var win = outerWin;
