@@ -2931,7 +2931,7 @@ function Ace2Inner(){
       // it is possible the a line is partially visible and user places the caret in this line
       var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] >= lastLineCompletelyVisibleOfViewport;
       var linesOfPad = rep.lines.length();
-      var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport + 1;
+      var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineCompletelyVisibleOfViewport + 1;
       if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport)
       {
         var win = outerWin;
