@@ -2931,8 +2931,12 @@ function Ace2Inner(){
       var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] >= lastLineCompletelyVisibleOfViewport;
       var linesOfPad = rep.lines.length();
       var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineCompletelyVisibleOfViewport + 1;
-      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport)
+
+      // avoid scrolling to the end of pad, when user press shortcut to select all (Cmd + A)
+      var hasSelection =  rep.selStart[0] !== rep.selEnd[0];
+      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport && !hasSelection)
       {
+
         var win = outerWin;
 
         // when scrollWhenFocusLineIsOutOfViewport.percentage is 0, pixelsToScroll is 0
