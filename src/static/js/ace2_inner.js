@@ -72,6 +72,7 @@ function Ace2Inner(){
   var LINE_NUMBER_PADDING_LEFT = 4;
   var MIN_LINEDIV_WIDTH = 20;
   var EDIT_BODY_PADDING_TOP = 8;
+  var EDITOR_CONTAINER_POSITION_TOP = 38;
   var EDIT_BODY_PADDING_LEFT = 8;
 
   var caughtErrors = [];
@@ -2918,19 +2919,18 @@ function Ace2Inner(){
       // when the caret is placed at the last line visible of the viewport, it scrolls
       // a percentage of viewport height defined by scrollWhenFocusLineIsOutOfViewport.percentage.
       // When scrollWhenFocusLineIsOutOfViewport.percentage is 0, it keeps the default behavior
-      // that does not scroll at all
+      // that does not scroll at all.
+      // However, it scrolls only if the last line visible is in the bottom of the viewport.
+      // E.g., when there is only one line in the pad, this line(div) is the last line of
+      // the viewport, but it is not in the bottom of the viewport, so it should not scroll.
+      // This case only happens when it has a plugin of pagination, like ep_page_view
       var edgeLinesVisibleOnViewport = getVisibleLineRange();
       var lastLineVisibleOfViewport = edgeLinesVisibleOnViewport[1];
       var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineVisibleOfViewport;
-
-      // it scrolls only in the last line if this one is in the bottom of the viewport.
-      // E.g., when there is only one line in the pad, this line(div) is the last line of
-      // the viewport, but it is not in the bottom of the viewport, so it should not scroll.
-      // This error happens when it has a plugin of pagination, like ep_page_view
       var linesOfPad = rep.lines.length();
       var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport + 1;
-
-      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport){
+      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport)
+      {
         var win = outerWin;
 
         // when scrollWhenFocusLineIsOutOfViewport.percentage is 0, pixelsToScroll is 0
@@ -3307,8 +3307,8 @@ function Ace2Inner(){
     var top = dom.offsetTop;
     var height = dom.offsetHeight;
     var obj = (destObj || {});
-    obj.top = top + iframePadTop;
-    obj.bottom = (obj.top + height);
+    obj.top = top;
+    obj.bottom = (top + height);
     return obj;
   }
 
@@ -3319,7 +3319,7 @@ function Ace2Inner(){
     var height = doc.documentElement.clientHeight;
     return {
       top: theTop,
-      bottom: (theTop + height)
+      bottom: (theTop + height - EDITOR_CONTAINER_POSITION_TOP)
     };
   }
 
@@ -3334,11 +3334,11 @@ function Ace2Inner(){
     });
     var end = rep.lines.search(function(e)
     {
-      return getLineEntryTopBottom(e, obj).top >= viewport.bottom;
+      return getLineEntryTopBottom(e, obj).top > viewport.bottom;
     });
     if (end < start) end = start; // unlikely
-    //console.log(start+","+end);
-    return [start, end - 1];
+    // top.console.log(start+","+end);
+    return [start, end];
   }
 
   function getVisibleCharRange()
