@@ -2925,8 +2925,10 @@ function Ace2Inner(){
       // the viewport, but it is not in the bottom of the viewport, so it should not scroll.
       // This case only happens when it has a plugin of pagination, like ep_page_view
       var edgeLinesVisibleOnViewport = getVisibleLineRange();
-      var lastLineVisibleOfViewport = edgeLinesVisibleOnViewport[1];
-      var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineVisibleOfViewport;
+      var lastLineCompletelyVisibleOfViewport = edgeLinesVisibleOnViewport[1];
+
+      // it is possible the a line is partially visible and user places the caret in this line
+      var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] >= lastLineCompletelyVisibleOfViewport;
       var linesOfPad = rep.lines.length();
       var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineVisibleOfViewport + 1;
       if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport)
