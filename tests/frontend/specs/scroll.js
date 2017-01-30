@@ -220,6 +220,44 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
+  // the ep_page_view adds padding-top to the ace_outer, which changes the viewport height
+  describe('integration with ep_page_view', function(){
+    context('when plugin ep_page_view is present', function(){
+      before(function () {
+        resetResizeOfEditor();
+        scrollEditorToTopOfPad();
+
+        // height of the editor viewport
+        var editorHeight = getEditorHeight();
+
+        // add a big padding-top, 50% of the viewport
+        var paddingTopOfAceOuter = editorHeight/2;
+        var chrome$ = helper.padChrome$;
+        var $outerIframe = chrome$("iframe");
+        $outerIframe.css("padding-top", paddingTopOfAceOuter);
+
+        // we set a big value to check if the scroll is made
+        setScrollPercentageWhenFocusLineIsOutOfViewport(1);
+      });
+
+      context('and user places the caret in the last line visible of the pad', function(){
+        var lastLineVisible;
+        beforeEach(function (done) {
+          lastLineVisible = getLastLineVisibleOfViewport();
+          placeCaretInTheBeginningOfLine(lastLineVisible, done);
+        });
+
+        it('scrolls the line where caret is', function(done){
+          helper.waitFor(function(){
+            var firstLineVisibileOfViewport = getFirstLineVisibileOfViewport();
+            var linesScrolled = firstLineVisibileOfViewport !== 0;
+            return linesScrolled;
+          }).done(done);
+        });
+      });
+    });
+  });
+
   /* ********************* Helper functions/constants ********************* */
   var TOP_OF_PAGE = 0;
   var BOTTOM_OF_PAGE = 5000; // we use a big value to force the page to be scrolled all the way down
@@ -258,6 +296,18 @@ describe('scroll when focus line is out of viewport', function () {
   var resizeEditor = function() {
     var chrome$ = helper.padChrome$;
     chrome$("#editorcontainer").css("height", getSizeOfViewport());
+  };
+
+  var resetResizeOfEditor = function() {
+    var chrome$ = helper.padChrome$;
+    chrome$("#editorcontainer").css("height", "");
+  };
+
+  var getEditorHeight = function() {
+    var chrome$ = helper.padChrome$;
+    var $editor = chrome$("#editorcontainer");
+    var editorHeight = $editor.get(0).clientHeight;
+    return editorHeight;
   };
 
   var getSizeOfViewport = function() {
@@ -362,16 +412,23 @@ describe('scroll when focus line is out of viewport', function () {
     var iframePadTop = 8;
     var inner$ = helper.padInner$;
     var outer$ = helper.padOuter$;
+    var chrome$ = helper.padChrome$;
+
     var $line = getLine(lineNumber);
     var linePosition = $line.get(0).getBoundingClientRect();
     var scrollTopFirefox = outer$('#outerdocbody').parent().scrollTop(); // works only on firefox
     var scrolltop = outer$('#outerdocbody').scrollTop() || scrollTopFirefox;
 
+    // ep_page_view changes the dimensions of the editor. We have to guarantee the viewport height is calculated right
+    var $outerIframe = chrome$("iframe");
+    var paddingAddedWhenPageViewIsEnable = parseInt($outerIframe.css("padding-top"));
+
     // position relative to the current viewport
     var linePositionTopOnViewport = linePosition.top - scrolltop + iframePadTop;
     var linePositionBottomOnViewport = linePosition.bottom - scrolltop;
     var lineAboveViewportTop = linePositionBottomOnViewport <= 0;
-    var lineBelowViewportBottom = linePositionTopOnViewport >= getClientHeight();
+
+    var lineBelowViewportBottom = linePositionTopOnViewport >= getClientHeight() - paddingAddedWhenPageViewIsEnable;
     return !(lineAboveViewportTop || lineBelowViewportBottom);
   };
 
