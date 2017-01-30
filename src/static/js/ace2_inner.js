@@ -3326,8 +3326,17 @@ function Ace2Inner(){
     var height = doc.documentElement.clientHeight;
     return {
       top: theTop,
-      bottom: (theTop + height - EDITOR_CONTAINER_POSITION_TOP)
+      bottom: (theTop + height - (EDITOR_CONTAINER_POSITION_TOP + getPaddingTopAddedWhenPageViewIsEnable()))
     };
+  }
+
+  // ep_page_view adds padding-top, which makes the viewport smaller
+  function getPaddingTopAddedWhenPageViewIsEnable()
+  {
+    var rootDocument = parent.parent.document;
+    aceOuter = rootDocument.getElementsByName("ace_outer");
+    aceOuterPaddingTop = parseInt($(aceOuter).css("padding-top"));
+    return aceOuterPaddingTop;
   }
 
   function getVisibleLineRange()
