@@ -2928,13 +2928,15 @@ function Ace2Inner(){
       var lastLineCompletelyVisibleOfViewport = edgeLinesVisibleOnViewport[1];
 
       // it is possible the a line is partially visible and user places the caret in this line
-      var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] >= lastLineCompletelyVisibleOfViewport;
+      var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineCompletelyVisibleOfViewport;
+      var caretIsInThelastLinePartiallyVisibleOfViewport = rep.selEnd[0] === lastLineCompletelyVisibleOfViewport + 1;
+      var caretIsInTheLastLineOfViewport = caretIsInThelastLineVisibleOfViewport || caretIsInThelastLinePartiallyVisibleOfViewport;
       var linesOfPad = rep.lines.length();
       var lastLineVisibleIsInTheBottomOfViewport = linesOfPad > lastLineCompletelyVisibleOfViewport + 1;
 
       // avoid scrolling to the end of pad, when user press shortcut to select all (Cmd + A)
       var hasSelection =  rep.selStart[0] !== rep.selEnd[0];
-      if(caretIsInThelastLineVisibleOfViewport && lastLineVisibleIsInTheBottomOfViewport && !hasSelection)
+      if(caretIsInTheLastLineOfViewport && lastLineVisibleIsInTheBottomOfViewport && !hasSelection)
       {
 
         var win = outerWin;
