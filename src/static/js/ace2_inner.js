@@ -5261,14 +5261,26 @@ function Ace2Inner(){
     var outerDocBody = win.document.getElementById("outerdocbody");
 
     // it works on chrome
-    $(outerDocBody).animate({
-      scrollTop: '+=' + pixelsToScroll
-    }, durationOfAnimationToShowFocusline);
+    var $outerDocBody = $(outerDocBody);
+    triggerScrollWithAnimation($outerDocBody, pixelsToScroll, durationOfAnimationToShowFocusline);
 
     // it works on firefox
-    $(outerDocBody).parent().animate({
+    var $outerDocBodyParent = $outerDocBody.parent();
+    triggerScrollWithAnimation($outerDocBodyParent, pixelsToScroll, durationOfAnimationToShowFocusline);
+  }
+
+  // using a custom queue and clearing it, we avoid creating a queue of scroll animations. So if this function
+  // is called twice quickly, only the last one runs.
+  function triggerScrollWithAnimation($elem, pixelsToScroll, durationOfAnimationToShowFocusline)
+  {
+    // clear the queue of animation
+    $elem.stop("scrollanimation");
+    $elem.animate({
       scrollTop: '+=' + pixelsToScroll
-    }, durationOfAnimationToShowFocusline);
+    }, {
+      duration: durationOfAnimationToShowFocusline,
+      queue: "scrollanimation"
+    }).dequeue("scrollanimation");
   }
 
   // By default, when user makes an edition in a line out of viewport, this line goes
