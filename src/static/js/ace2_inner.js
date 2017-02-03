@@ -72,7 +72,6 @@ function Ace2Inner(){
   var LINE_NUMBER_PADDING_LEFT = 4;
   var MIN_LINEDIV_WIDTH = 20;
   var EDIT_BODY_PADDING_TOP = 8;
-  var EDITOR_CONTAINER_POSITION_TOP = 38;
   var EDIT_BODY_PADDING_LEFT = 8;
 
   var caughtErrors = [];
@@ -129,8 +128,6 @@ function Ace2Inner(){
 
   var console = (DEBUG && window.console);
   var documentAttributeManager;
-
-  var arrowKeyWasReleased = true;
 
   if (!window.console)
   {
@@ -3324,19 +3321,31 @@ function Ace2Inner(){
   {
     var theTop = getScrollY();
     var doc = outerWin.document;
-    var height = doc.documentElement.clientHeight;
+    var height = doc.documentElement.clientHeight; // includes padding
+
+    // we have to get the exactly height of the viewport. So it has to subtract all the values which changes
+    // the viewport height (E.g. padding, position top)
+    var viewportExtraSpacesAndPosition = getEditorContainerPositionTop() + getPaddingTopAddedWhenPageViewIsEnable();
     return {
       top: theTop,
-      bottom: (theTop + height - (EDITOR_CONTAINER_POSITION_TOP + getPaddingTopAddedWhenPageViewIsEnable()))
+      bottom: (theTop + height - viewportExtraSpacesAndPosition)
     };
+  }
+
+  function getEditorContainerPositionTop()
+  {
+    var rootDocument = parent.parent.document;
+    var editorContainer = rootDocument.getElementById("editorcontainer");
+    var editorContainerPositionTop = parseInt($(editorContainer).css("top"));
+    return editorContainerPositionTop;
   }
 
   // ep_page_view adds padding-top, which makes the viewport smaller
   function getPaddingTopAddedWhenPageViewIsEnable()
   {
     var rootDocument = parent.parent.document;
-    aceOuter = rootDocument.getElementsByName("ace_outer");
-    aceOuterPaddingTop = parseInt($(aceOuter).css("padding-top"));
+    var aceOuter = rootDocument.getElementsByName("ace_outer");
+    var aceOuterPaddingTop = parseInt($(aceOuter).css("padding-top"));
     return aceOuterPaddingTop;
   }
 
@@ -4058,17 +4067,16 @@ function Ace2Inner(){
         if((evt.which == 37 || evt.which == 38 || evt.which == 39 || evt.which == 40)){
           // we use arrowKeyWasReleased to avoid triggering the animation when a key is continuously pressed
           // this makes the scroll smooth
-          if (type == 'keyup') arrowKeyWasReleased = true;
-          if (type == 'keydown' && arrowKeyWasReleased){
-            arrowKeyWasReleased = false;
-
-            // use jQuery to avoid error of compatibility with Microsoft IE and Edge (javascript closest)
-            // we use getSelection() instead of rep to get the caret position. This avoids errors like when
+          if(!continuouslyPressingArrowKey(type)){
+            // We use getSelection() instead of rep to get the caret position. This avoids errors like when
             // the caret position is not synchronized with the rep. For example, when an user presses arrow
             // down to scroll the pad without releasing the key. When the key is released the rep is not
-            // synchronized, so we don't get the right node where caret it.
-            var node = $(document.getSelection().anchorNode).closest('div').get(0);
-            scrollNodeVerticallyIntoView(node);
+            // synchronized, so we don't get the right node where caret is.
+            var selection = getSelection();
+            if (selection) {
+              var node = topLevel(selection.startPoint.node);
+              scrollNodeVerticallyIntoView(node);
+            }
           }
         }
       }
@@ -4124,6 +4132,19 @@ function Ace2Inner(){
   }
 
   var thisKeyDoesntTriggerNormalize = false;
+
+  var arrowKeyWasReleased = true;
+  function continuouslyPressingArrowKey(type) {
+    var firstTimeKeyIsContinuouslyPressed = false;
+
+    if (type == 'keyup') arrowKeyWasReleased = true;
+    else if (type == 'keydown' && arrowKeyWasReleased) {
+      firstTimeKeyIsContinuouslyPressed = true;
+      arrowKeyWasReleased = false;
+    }
+
+    return !firstTimeKeyIsContinuouslyPressed;
+  }
 
   function doUndoRedo(which)
   {

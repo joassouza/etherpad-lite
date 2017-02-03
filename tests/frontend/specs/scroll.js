@@ -13,13 +13,14 @@ describe('scroll when focus line is out of viewport', function () {
 
   context('when user presses any arrow keys on a line above the viewport', function(){
     context('and scroll percentage config is set to 0.2 on settings.json', function(){
-      var focusLine = 10;
+      var lineCloseOfTopOfPad = 10;
       before(function (done) {
         setScrollPercentageWhenFocusLineIsOutOfViewport(0.2);
         scrollEditorToBottomOfPad();
 
-        placeCaretInTheBeginningOfLine(focusLine, function(){ // place caret in the 10th line
+        placeCaretInTheBeginningOfLine(lineCloseOfTopOfPad, function(){ // place caret in the 10th line
           // warning: even pressing right arrow, the caret does not change of position
+          // the column where the caret is, it has not importance, only the line
           pressAndReleaseRightArrow();
           done();
         });
@@ -30,8 +31,7 @@ describe('scroll when focus line is out of viewport', function () {
         // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.2, we have an extra 20% of lines scrolled
         // (2 lines, which are the 20% of the 10 that are visible on viewport)
         var firstLineOfViewport = getFirstLineVisibileOfViewport();
-        var lineScrolledToTheMiddleOfViewport = firstLineOfViewport + 2 === focusLine;
-        expect(lineScrolledToTheMiddleOfViewport).to.be(true);
+        expect(lineCloseOfTopOfPad).to.be(firstLineOfViewport + 2);
         done();
       });
     });
@@ -39,13 +39,13 @@ describe('scroll when focus line is out of viewport', function () {
 
   context('when user presses any arrow keys on a line below the viewport', function(){
     context('and scroll percentage config is set to 0.7 on settings.json', function(){
-      var focusLine = 50;
+      var lineCloseToBottomOfPad = 50;
       before(function (done) {
         setScrollPercentageWhenFocusLineIsOutOfViewport(0.7);
 
-        // firstly, scroll to make the focusLine visible. After that, scroll to make it out of viewport
+        // firstly, scroll to make the lineCloseToBottomOfPad visible. After that, scroll to make it out of viewport
         scrollEditorToTopOfPad();
-        placeCaretAtTheEndOfLine(focusLine); // place caret in the 50th line
+        placeCaretAtTheEndOfLine(lineCloseToBottomOfPad); // place caret in the 50th line
         setTimeout(function() {
           // warning: even pressing right arrow, the caret does not change of position
           pressAndReleaseLeftArrow();
@@ -58,8 +58,7 @@ describe('scroll when focus line is out of viewport', function () {
         // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.7, we have an extra 70% of lines scrolled
         // (7 lines, which are the 70% of the 10 that are visible on viewport)
         var lastLineOfViewport = getLastLineVisibleOfViewport();
-        var lineScrolledSevenLinesFromTheBottomOfViewport = lastLineOfViewport - 7 === focusLine;
-        expect(lineScrolledSevenLinesFromTheBottomOfViewport).to.be(true);
+        expect(lineCloseToBottomOfPad).to.be(lastLineOfViewport - 7);
         done();
       });
     });
@@ -80,8 +79,7 @@ describe('scroll when focus line is out of viewport', function () {
 
       it('keeps the focus line on the bottom of the viewport', function (done) {
         var lastLineOfViewportAfterEnter = getLastLineVisibleOfViewport();
-        var scrolledOneLineDown = lastLineOfViewportAfterEnter === lastLineOfViewportBeforeEnter + 1;
-        expect(scrolledOneLineDown).to.be(true);
+        expect(lastLineOfViewportAfterEnter).to.be(lastLineOfViewportBeforeEnter + 1);
         done();
       });
     });
@@ -102,8 +100,7 @@ describe('scroll when focus line is out of viewport', function () {
         // default behavior is to scroll one line at the bottom of viewport, but as
         // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.3, we have an extra 30% of lines scrolled
         // (3 lines, which are the 30% of the 10 that are visible on viewport)
-        var scrolledThreeLinesDown = lastLineOfViewportAfterEnter === lastLineOfViewportBeforeEnter + 3;
-        expect(scrolledThreeLinesDown).to.be(true);
+        expect(lastLineOfViewportAfterEnter).to.be(lastLineOfViewportBeforeEnter + 3);
         done();
       });
     });
@@ -120,8 +117,7 @@ describe('scroll when focus line is out of viewport', function () {
 
       it('keeps the default behavior of moving the focus line on the bottom of the viewport', function (done) {
         var lastLineOfViewportAfterEnter = getLastLineVisibleOfViewport();
-        var scrolledOneLineDown = lastLineOfViewportAfterEnter === lastLineOfViewportBeforeEnter + 1;
-        expect(scrolledOneLineDown).to.be(true);
+        expect(lastLineOfViewportAfterEnter).to.be(lastLineOfViewportBeforeEnter + 1);
         done();
       });
     });
@@ -129,33 +125,32 @@ describe('scroll when focus line is out of viewport', function () {
 
   context('when user edits a line above the viewport', function(){
     context('and scroll percentage config is set to 0 on settings.json', function(){
-      var focusLine = 10;
+      var lineCloseOfTopOfPad = 10;
       before(function () {
         // the default value
         setScrollPercentageWhenFocusLineIsOutOfViewport(0);
 
-        // firstly, scroll to make the focusLine visible. After that, scroll to make it out of viewport
+        // firstly, scroll to make the lineCloseOfTopOfPad visible. After that, scroll to make it out of viewport
         scrollEditorToTopOfPad();
-        placeCaretAtTheEndOfLine(focusLine); // place caret in the 10th line
+        placeCaretAtTheEndOfLine(lineCloseOfTopOfPad); // place caret in the 10th line
         scrollEditorToBottomOfPad();
         pressBackspace(); // edit the line where the caret is, which is above the viewport
       });
 
       it('keeps the focus line on the top of the viewport', function (done) {
         var firstLineOfViewportAfterEnter = getFirstLineVisibileOfViewport();
-        var keepLineEditedOnTopOfViewport = firstLineOfViewportAfterEnter === focusLine;
-        expect(keepLineEditedOnTopOfViewport).to.be(true);
+        expect(firstLineOfViewportAfterEnter).to.be(lineCloseOfTopOfPad);
         done();
       });
     });
 
     context('and scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.2', function(){ // this value is arbitrary
-      var focusline = 50;
+      var lineCloseToBottomOfPad = 50;
       before(function () {
         // we force the line edited to be above the top of the viewport
         setScrollPercentageWhenFocusLineIsOutOfViewport(0.2); // set scroll jump to 20%
         scrollEditorToTopOfPad();
-        placeCaretAtTheEndOfLine(focusline);
+        placeCaretAtTheEndOfLine(lineCloseToBottomOfPad);
         scrollEditorToBottomOfPad();
         pressBackspace(); // edit line
       });
@@ -165,8 +160,7 @@ describe('scroll when focus line is out of viewport', function () {
         // scrollPercentageWhenFocusLineIsOutOfViewport is set to 0.2, we have an extra 20% of lines scrolled
         // (2 lines, which are the 20% of the 10 that are visible on viewport)
         var firstLineVisibileOfViewport = getFirstLineVisibileOfViewport();
-        var focusLineIsTwoLinesFromTop = focusline === firstLineVisibileOfViewport + 2;
-        expect(focusLineIsTwoLinesFromTop).to.be(true);
+        expect(lineCloseToBottomOfPad).to.be(firstLineVisibileOfViewport + 2);
         done();
       });
     });
@@ -220,10 +214,12 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
-  // the ep_page_view adds padding-top to the ace_outer, which changes the viewport height
-  describe('integration with ep_page_view', function(){
-    context('when plugin ep_page_view is present', function(){
+  // Some plugins, for example the ep_page_view, change the editor dimensions. This plugin, for example,
+  // adds padding-top to the ace_outer, which changes the viewport height
+  describe('integration with plugins which changes the margin of editor', function(){
+    context('when editor dimensions changes', function(){
       before(function () {
+        // reset the size of editor. Now we show more than 10 lines as in the other tests
         resetResizeOfEditor();
         scrollEditorToTopOfPad();
 
@@ -233,8 +229,8 @@ describe('scroll when focus line is out of viewport', function () {
         // add a big padding-top, 50% of the viewport
         var paddingTopOfAceOuter = editorHeight/2;
         var chrome$ = helper.padChrome$;
-        var $outerIframe = chrome$("iframe");
-        $outerIframe.css("padding-top", paddingTopOfAceOuter);
+        var $outerIframe = chrome$('iframe');
+        $outerIframe.css('padding-top', paddingTopOfAceOuter);
 
         // we set a big value to check if the scroll is made
         setScrollPercentageWhenFocusLineIsOutOfViewport(1);
@@ -270,18 +266,18 @@ describe('scroll when focus line is out of viewport', function () {
 
   var cleanPad = function(callback) {
     var inner$ = helper.padInner$;
-    var $padContent = inner$("#innerdocbody");
-    $padContent.html("");
+    var $padContent = inner$('#innerdocbody');
+    $padContent.html('');
 
     // wait for Etherpad to re-create first line
     helper.waitFor(function(){
-      var lineNumber = inner$("div").length;
+      var lineNumber = inner$('div').length;
       return lineNumber === 1;
     }, 2000).done(callback);
   };
 
   var createPadWithSeveralLines = function(done) {
-    var line = "<span>a</span><br>";
+    var line = '<span>a</span><br>';
     var $firstLine = helper.padInner$('div').first();
     var lines = line.repeat(LINES_OF_PAD); //arbitrary number, we need to create lines that is over the viewport
     $firstLine.html(lines);
@@ -295,17 +291,17 @@ describe('scroll when focus line is out of viewport', function () {
   // resize the editor to make the tests easier
   var resizeEditor = function() {
     var chrome$ = helper.padChrome$;
-    chrome$("#editorcontainer").css("height", getSizeOfViewport());
+    chrome$('#editorcontainer').css('height', getSizeOfViewport());
   };
 
   var resetResizeOfEditor = function() {
     var chrome$ = helper.padChrome$;
-    chrome$("#editorcontainer").css("height", "");
+    chrome$('#editorcontainer').css('height', '');
   };
 
   var getEditorHeight = function() {
     var chrome$ = helper.padChrome$;
-    var $editor = chrome$("#editorcontainer");
+    var $editor = chrome$('#editorcontainer');
     var editorHeight = $editor.get(0).clientHeight;
     return editorHeight;
   };
@@ -330,7 +326,7 @@ describe('scroll when focus line is out of viewport', function () {
 
   var getLine = function(lineNum) {
     var inner$ = helper.padInner$;
-    var $line = inner$("div").eq(lineNum);
+    var $line = inner$('div').eq(lineNum);
     return $line;
   };
 
@@ -352,39 +348,39 @@ describe('scroll when focus line is out of viewport', function () {
   var getLineWhereCaretIs = function() {
     var inner$ = helper.padInner$;
     var nodeWhereCaretIs = inner$.document.getSelection().anchorNode;
-    var $lineWhereCaretIs = $(nodeWhereCaretIs).closest("div");
+    var $lineWhereCaretIs = $(nodeWhereCaretIs).closest('div');
     return $lineWhereCaretIs;
   };
 
   var getFirstLineVisibileOfViewport = function() {
-    return  _.find(_.range(0, LINES_OF_PAD - 1), isLineOnViewport);
+    return _.find(_.range(0, LINES_OF_PAD - 1), isLineOnViewport);
   };
 
   var getLastLineVisibleOfViewport = function() {
-    return  _.find(_.range(LINES_OF_PAD - 1, 0, -1), isLineOnViewport);
+    return _.find(_.range(LINES_OF_PAD - 1, 0, -1), isLineOnViewport);
   };
 
   var pressKey = function(keyCode){
     var inner$ = helper.padInner$;
     var evtType;
     if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
-      evtType = "keypress";
+      evtType = 'keypress';
     }else{
-      evtType = "keydown";
+      evtType = 'keydown';
     }
     var e = inner$.Event(evtType);
     e.keyCode = keyCode;
     e.which = keyCode; // etherpad listens to 'which'
-    inner$("#innerdocbody").trigger(e);
+    inner$('#innerdocbody').trigger(e);
   };
 
   var releaseKey = function(keyCode){
     var inner$ = helper.padInner$;
-    var evtType = "keyup";
+    var evtType = 'keyup';
     var e = inner$.Event(evtType);
     e.keyCode = keyCode;
     e.which = keyCode; // etherpad listens to 'which'
-    inner$("#innerdocbody").trigger(e);
+    inner$('#innerdocbody').trigger(e);
   };
 
   var pressEnter = function() {
@@ -410,37 +406,46 @@ describe('scroll when focus line is out of viewport', function () {
     // how much scroll is needed. Although the name refers to padding-top, this value is not set on the
     // padding-top.
     var iframePadTop = 8;
-    var inner$ = helper.padInner$;
-    var outer$ = helper.padOuter$;
-    var chrome$ = helper.padChrome$;
-
     var $line = getLine(lineNumber);
     var linePosition = $line.get(0).getBoundingClientRect();
-    var scrollTopFirefox = outer$('#outerdocbody').parent().scrollTop(); // works only on firefox
-    var scrolltop = outer$('#outerdocbody').scrollTop() || scrollTopFirefox;
-
-    // ep_page_view changes the dimensions of the editor. We have to guarantee the viewport height is calculated right
-    var $outerIframe = chrome$("iframe");
-    var paddingAddedWhenPageViewIsEnable = parseInt($outerIframe.css("padding-top"));
 
     // position relative to the current viewport
-    var linePositionTopOnViewport = linePosition.top - scrolltop + iframePadTop;
-    var linePositionBottomOnViewport = linePosition.bottom - scrolltop;
-    var lineAboveViewportTop = linePositionBottomOnViewport <= 0;
+    var linePositionTopOnViewport = linePosition.top - getEditorScroll() + iframePadTop;
+    var linePositionBottomOnViewport = linePosition.bottom - getEditorScroll();
 
-    var lineBelowViewportBottom = linePositionTopOnViewport >= getClientHeight() - paddingAddedWhenPageViewIsEnable;
-    return !(lineAboveViewportTop || lineBelowViewportBottom);
+    var lineBellowTop = linePositionBottomOnViewport > 0;
+    var lineAboveBottom = linePositionTopOnViewport < getClientHeightVisible();
+    var isVisible = lineBellowTop && lineAboveBottom;
+
+    return isVisible;
   };
 
-  var getClientHeight = function () {
+  var getEditorScroll = function () {
+    var outer$ = helper.padOuter$;
+    var scrollTopFirefox = outer$('#outerdocbody').parent().scrollTop(); // works only on firefox
+    var scrollTop = outer$('#outerdocbody').scrollTop() || scrollTopFirefox;
+    return scrollTop;
+  };
+
+  // clientHeight includes padding, so we have to subtract it and consider only the visible viewport
+  var getClientHeightVisible = function () {
     var outer$ = helper.padOuter$;
     var $ace_outer = outer$('#outerdocbody').parent();
     var ace_outerHeight = $ace_outer.get(0).clientHeight;
-    var ace_outerPaddingTop = getIntValueOfCSSProperty($ace_outer, "padding-top");
-
-    var clientHeight = ace_outerHeight - ace_outerPaddingTop;
+    var ace_outerPaddingTop = getIntValueOfCSSProperty($ace_outer, 'padding-top');
+    var paddingAddedWhenPageViewIsEnable = getPaddingAddedWhenPageViewIsEnable();
+    var clientHeight = ace_outerHeight - ( ace_outerPaddingTop + paddingAddedWhenPageViewIsEnable);
 
     return clientHeight;
+  };
+
+  // ep_page_view changes the dimensions of the editor. We have to guarantee
+  // the viewport height is calculated right
+  var getPaddingAddedWhenPageViewIsEnable = function () {
+    var chrome$ = helper.padChrome$;
+    var $outerIframe = chrome$('iframe');
+    var paddingAddedWhenPageViewIsEnable = parseInt($outerIframe.css('padding-top'));
+    return paddingAddedWhenPageViewIsEnable;
   };
 
   var getIntValueOfCSSProperty = function($element, property){
@@ -456,12 +461,8 @@ describe('scroll when focus line is out of viewport', function () {
     var $line = getLine(lineNumber);
     var linePosition = $line.get(0).getBoundingClientRect();
 
-    var outer$ = helper.padOuter$;
-    var scrollTopFirefox = outer$('#outerdocbody').parent().scrollTop(); // works only on firefox
-    var scrolltop = outer$('#outerdocbody').scrollTop() || scrollTopFirefox;
-
     // position relative to the current viewport
-    return linePosition.top - scrolltop;
+    return linePosition.top - getEditorScroll();
   };
 });
 
