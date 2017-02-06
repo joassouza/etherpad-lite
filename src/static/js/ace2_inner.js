@@ -2924,7 +2924,7 @@ function Ace2Inner(){
       var edgeLinesVisibleOnViewport = getVisibleLineRange();
       var lastLineCompletelyVisibleOfViewport = edgeLinesVisibleOnViewport[1];
 
-      // it is possible the a line is partially visible and user places the caret in this line
+      // it is possible a line is partially visible and user places the caret in this line
       var caretIsInThelastLineVisibleOfViewport = rep.selEnd[0] === lastLineCompletelyVisibleOfViewport;
       var caretIsInThelastLinePartiallyVisibleOfViewport = rep.selEnd[0] === lastLineCompletelyVisibleOfViewport + 1;
       var caretIsInTheLastLineOfViewport = caretIsInThelastLineVisibleOfViewport || caretIsInThelastLinePartiallyVisibleOfViewport;
