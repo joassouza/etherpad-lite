@@ -214,6 +214,36 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
+  // This is a special case. When user is selecting a text with arrow down or arrow left we have
+  // to keep the last line selected on focus
+  context('when the first line selected is out of the viewport and user presses shift + arrow down', function(){
+    var lastLineOfPad = 99;
+    before(function (done) {
+      scrollEditorToTopOfPad();
+
+      // make a selection bigger than the viewport height
+      var $firstLineOfSelection = getLine(0);
+      var $lastLineOfSelection = getLine(lastLineOfPad);
+      var lengthOfLastLine = $lastLineOfSelection.text().length;
+      helper.selectLines($firstLineOfSelection, $lastLineOfSelection, 0, lengthOfLastLine);
+
+      // place the last line selected on the viewport
+      scrollEditorToBottomOfPad();
+
+      // press a key to make the selection goes down
+      // although we can't simulate the extending of selection. It's possible to send a key event
+      // which is captured on ace2_inner scroll function.
+      pressAndReleaseLeftArrow(true);
+      done();
+    });
+
+    it('keeps the last line selected on focus', function (done) {
+      var lastLineOfSelectionIsVisible = isLineOnViewport(lastLineOfPad);
+      expect(lastLineOfSelectionIsVisible).to.be(true);
+      done();
+    });
+  });
+
   // Some plugins, for example the ep_page_view, change the editor dimensions. This plugin, for example,
   // adds padding-top to the ace_outer, which changes the viewport height
   describe('integration with plugins which changes the margin of editor', function(){
@@ -360,7 +390,7 @@ describe('scroll when focus line is out of viewport', function () {
     return _.find(_.range(LINES_OF_PAD - 1, 0, -1), isLineOnViewport);
   };
 
-  var pressKey = function(keyCode){
+  var pressKey = function(keyCode, shiftIsPressed){
     var inner$ = helper.padInner$;
     var evtType;
     if(inner$(window)[0].bowser.firefox || inner$(window)[0].bowser.modernIE){ // if it's a mozilla or IE
@@ -369,6 +399,7 @@ describe('scroll when focus line is out of viewport', function () {
       evtType = 'keydown';
     }
     var e = inner$.Event(evtType);
+    e.shiftKey = shiftIsPressed;
     e.keyCode = keyCode;
     e.which = keyCode; // etherpad listens to 'which'
     inner$('#innerdocbody').trigger(e);
@@ -396,8 +427,8 @@ describe('scroll when focus line is out of viewport', function () {
     releaseKey(RIGHT_ARROW);
   };
 
-  var pressAndReleaseLeftArrow = function() {
-    pressKey(LEFT_ARROW);
+  var pressAndReleaseLeftArrow = function(shiftIsPressed) {
+    pressKey(LEFT_ARROW, shiftIsPressed);
     releaseKey(LEFT_ARROW);
   };
 
