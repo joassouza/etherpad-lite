@@ -4073,9 +4073,18 @@ function Ace2Inner(){
             // down to scroll the pad without releasing the key. When the key is released the rep is not
             // synchronized, so we don't get the right node where caret is.
             var selection = getSelection();
-            if (selection) {
-              var node = topLevel(selection.startPoint.node);
-              scrollNodeVerticallyIntoView(node);
+            var firstNodeOfSelection = topLevel(selection.startPoint.node);
+            var lastNodeOfSelection = topLevel(selection.endPoint.node);
+            var hasMultiLineSelected = firstNodeOfSelection !== lastNodeOfSelection;
+            var arrowKeysThatMovesCaretDown = evt.which == 39 || evt.which == 40; // arrow right, arrow down
+
+            if(selection){
+              if (!hasMultiLineSelected) {
+                scrollNodeVerticallyIntoView(firstNodeOfSelection);
+              }else if(arrowKeysThatMovesCaretDown){
+                // when user is extending the selection downwards, it keeps the last line selected on focus
+                scrollNodeVerticallyIntoView(lastNodeOfSelection);
+              }
             }
           }
         }
