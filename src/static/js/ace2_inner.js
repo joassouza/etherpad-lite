@@ -4072,10 +4072,11 @@ function Ace2Inner(){
             // the caret position is not synchronized with the rep. For example, when an user presses arrow
             // down to scroll the pad without releasing the key. When the key is released the rep is not
             // synchronized, so we don't get the right node where caret is.
-            var selection = document.getSelection();
+            var selection = getSelection();
 
             if(selection){
-              var endOfSelectionNode = topLevel(selection.focusNode);
+              var endOfSelection = (selection.focusAtStart ? selection.startPoint : selection.endPoint);
+              var endOfSelectionNode = topLevel(endOfSelection.node);
               scrollNodeVerticallyIntoView(endOfSelectionNode);
             }
           }
