@@ -3,7 +3,7 @@ describe('scroll when focus line is out of viewport', function () {
     helper.newPad(function(){
       cleanPad(function(){
         createPadWithSeveralLines(function(){
-          resizeEditor();
+          resizeEditorHeight();
           done();
         });
       });
@@ -244,13 +244,70 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
+  // In this scenario we avoid the double scroll. When we have a Etherpad Line (rep.lines) that extends to
+  // more than one line on Editor(editor.lines) and the height of the line is bigger than
+  // (scroll amount percentage * viewport height) the editor scrolls up-down every time user edits a line
+  // inside of the viewport. E.g Let's suppose we have a big line that is the size of the viewport, and its
+  // top is above the viewport. When user presses arrow left key, this line will scroll down because the
+  // top is out of the viewport. When it scrolls down, the bottom of line gets below the viewport so when user
+  // presses arrow left key again it scrolls up to make the bottom of line visible. If user presses arrow left
+  // keys more than one time, the editor will keep scrolling up and down
+  context('when the line height is bigger than the scroll amount percentage * viewport height', function(){
+    var scrollOfEditorBeforePressKey;
+    var bigLineNumber = 0;
+    before(function (done) {
+      // create a big line (rep.line) as the editor width is smaller,
+      // the line is wrapped, making 20 editor.lines. The editor shows
+      // 10 lines, so part of line stays out of the viewport
+      createPadWithAbigLineWrapped(this, bigLineNumber, function(){
+        setScrollPercentageWhenFocusLineIsOutOfViewport(0.5); // set any value to force scroll to outside to viewport
+        var $bigLine = getLine(bigLineNumber);
+
+        // each line has about 5 chars, we place the caret at the middle of the line
+        helper.selectLines($bigLine, $bigLine, 51, 51);
+
+        // scroll the editor to make to the caret line inside the viewport
+        // and both boundaries out of the viewport. The caret stays in the
+        // editor.line on the top of the viewport
+        var lineHeight = $bigLine.get(0).getBoundingClientRect().height;
+        var middleOfLine = lineHeight/2;
+        scrollPageTo(middleOfLine);
+
+        scrollOfEditorBeforePressKey = getEditorScroll();
+
+        // press a key to force to scroll
+        pressAndReleaseRightArrow();
+        done();
+      });
+    });
+
+    // reset pad to the original text
+    after(function (done) {
+      this.timeout(5000);
+      cleanPad(function(){
+        createPadWithSeveralLines(function(){
+          resetEditorWidth();
+          done();
+        });
+      });
+    });
+
+    // as the editor.line is inside of the viewport, it should not scroll
+    it('should not scroll', function (done) {
+      var scrollOfEditorAfterPressKey = getEditorScroll();
+      var editorDoesNotScroll = scrollOfEditorBeforePressKey === scrollOfEditorAfterPressKey;
+      expect(editorDoesNotScroll).to.be(true);
+      done();
+    });
+  });
+
   // Some plugins, for example the ep_page_view, change the editor dimensions. This plugin, for example,
   // adds padding-top to the ace_outer, which changes the viewport height
   describe('integration with plugins which changes the margin of editor', function(){
     context('when editor dimensions changes', function(){
       before(function () {
         // reset the size of editor. Now we show more than 10 lines as in the other tests
-        resetResizeOfEditor();
+        resetResizeOfEditorHeight();
         scrollEditorToTopOfPad();
 
         // height of the editor viewport
@@ -318,15 +375,51 @@ describe('scroll when focus line is out of viewport', function () {
     }, 4000).done(done);
   };
 
+  var createPadWithAbigLineWrapped = function(test, line, done) {
+    test.timeout(5000);
+    cleanPad(function(){
+      // make the editor smaller to make test easier
+      // with that width the each line has about 5 chars
+      resizeEditorWidth();
+
+      // we create a line with 100 chars, which makes about 20 lines
+      setLongTextOnLine(line);
+      helper.waitFor(function () {
+        var $firstLine = getLine(line);
+
+        // one line has 16px
+        var heightOfLine = $firstLine.get(0).getBoundingClientRect().height;
+        return heightOfLine > 300;
+      }, 4000).done(done);
+    });
+  };
+
+  var setLongTextOnLine = function(line) {
+    var $line = getLine(line);
+    var longText = 'a'.repeat(100);
+    $line.html(longText);
+  };
+
   // resize the editor to make the tests easier
-  var resizeEditor = function() {
+  var resizeEditorHeight = function() {
     var chrome$ = helper.padChrome$;
     chrome$('#editorcontainer').css('height', getSizeOfViewport());
   };
 
-  var resetResizeOfEditor = function() {
+  // this makes about 5 chars per line
+  var resizeEditorWidth = function() {
+    var chrome$ = helper.padChrome$;
+    chrome$('#editorcontainer').css('width', 100);
+  };
+
+  var resetResizeOfEditorHeight = function() {
     var chrome$ = helper.padChrome$;
     chrome$('#editorcontainer').css('height', '');
+  };
+
+  var resetEditorWidth = function () {
+    var chrome$ = helper.padChrome$;
+    chrome$('#editorcontainer').css('width', '');
   };
 
   var getEditorHeight = function() {
