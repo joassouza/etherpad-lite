@@ -81,6 +81,8 @@ function Ace2Inner(){
   var disposed = false;
   var editorInfo = parent.editorInfo;
 
+  var keyEmulatedByEtherpad = false;
+
   var iframe = window.frameElement;
   var outerWin = iframe.ace_outerWin;
   iframe.ace_outerWin = null; // prevent IE 6 memory leak
@@ -520,7 +522,7 @@ function Ace2Inner(){
           }
           if ((cs.docTextChanged || cs.userChangedSelection) && isScrollableEditEvent(cs.type))
           {
-            scrollSelectionIntoView(cs);
+            scrollSelectionIntoView();
           }
           if (cs.docTextChanged && cs.type.indexOf("importText") < 0)
           {
@@ -3879,11 +3881,7 @@ function Ace2Inner(){
           //  - probably eliminates a few minor quirks
           fastIncorp(3);
           evt.preventDefault();
-
-          // when a key is prevented and handled by Etherpad we lost some browser features. E.g. when user
-          // changes a selection of a line which is outside of the viewport, the browser scrolls automatically
-          // to make this line visible on the viewport. So, we mark that change to handle properly afterwards
-          currentCallStack.keyEmulatedByEtherpad = true;
+          keyEmulatedByEtherpad = true;
           doDeleteKey(evt);
           specialHandled = true;
         }
@@ -3893,11 +3891,7 @@ function Ace2Inner(){
           // note that in mozilla we need to do an incorporation for proper return behavior anyway.
           fastIncorp(4);
           evt.preventDefault();
-
-          // when a key is prevented and handled by Etherpad we lost some browser features. E.g. when user
-          // changes a selection of a line which is outside of the viewport, the browser scrolls automatically
-          // to make this line visible on the viewport. So, we mark that change to handle properly afterwards
-          currentCallStack.keyEmulatedByEtherpad = true;
+          keyEmulatedByEtherpad = true;
           doReturnKey();
           //scrollSelectionIntoView();
           scheduler.setTimeout(function()
@@ -3931,11 +3925,7 @@ function Ace2Inner(){
           // tab
           fastIncorp(5);
           evt.preventDefault();
-
-          // when a key is prevented and handled by Etherpad we lost some browser features. E.g. when user
-          // changes a selection of a line which is outside of the viewport, the browser scrolls automatically
-          // to make this line visible on the viewport. So, we mark that change to handle properly afterwards
-          currentCallStack.keyEmulatedByEtherpad = true;
+          keyEmulatedByEtherpad = true;
           doTabKey(evt.shiftKey);
           //scrollSelectionIntoView();
           specialHandled = true;
@@ -4022,11 +4012,7 @@ function Ace2Inner(){
           // cmd-H (backspace)
           fastIncorp(20);
           evt.preventDefault();
-
-          // when a key is prevented and handled by Etherpad we lost some browser features. E.g. when user
-          // changes a selection of a line which is outside of the viewport, the browser scrolls automatically
-          // to make this line visible on the viewport. So, we mark that change to handle properly afterwards
-          currentCallStack.keyEmulatedByEtherpad = true;
+          keyEmulatedByEtherpad = true;
           doDeleteKey();
           specialHandled = true;
         }
@@ -4097,7 +4083,7 @@ function Ace2Inner(){
             if(selection){
               var endOfSelection = (selection.focusAtStart ? selection.startPoint : selection.endPoint);
               var endOfSelectionNode = topLevel(endOfSelection.node);
-              scrollNodeVerticallyIntoView(endOfSelectionNode, currentCallStack);
+              scrollNodeVerticallyIntoView(endOfSelectionNode);
             }
           }
         }
@@ -5259,7 +5245,7 @@ function Ace2Inner(){
     return odoc.documentElement.clientWidth;
   }
 
-  function scrollNodeVerticallyIntoView(node, callStack)
+  function scrollNodeVerticallyIntoView(node)
   {
     // requires element (non-text) node;
     // if node extends above top of viewport or below bottom of viewport (or top of scrollbar),
@@ -5274,14 +5260,10 @@ function Ace2Inner(){
 
     // when the selection changes outside of the viewport the browser automatically scrolls the line
     // to inside of the viewport. Tested on IE, Firefox, Chrome in releases from 2015 until now
-    // So, when the line scrolled gets outside of the viewport we let the browser handle it
-    var lineIfScrolledWillStayInsideOfViewport = !extraScrollOfLineWouldMakeItGoesToOutOfViewport(node);
-
-    // when a key is emulated by the Etherpad. We lost the default scroll that is made by the browser
-    // so in these cases, we have to force to scroll anyway
-    var keyWasEmulatedByEtherpad = callStack.keyEmulatedByEtherpad !== undefined;
-
-    if(lineIfScrolledWillStayInsideOfViewport || keyWasEmulatedByEtherpad){
+    // So, when the line scrolled gets outside of the viewport we let the browser handle it.
+    // when a key is prevented and handled by Etherpad we lost some browser features as the automatic
+    // scroll mentioned above. So, when the key is emulated by the Etherpad we force to scroll anyway
+    if(hasSpaceToApplyExtraScrollAndKeepLineCompletelyOnViewport(node) || keyEmulatedByEtherpad){
       if (distBelowTop < 0)
       {
         var pixelsToScroll = distBelowTop - getPixelsRelativeToPercentageOfViewport();
@@ -5292,10 +5274,11 @@ function Ace2Inner(){
         var pixelsToScroll = -distAboveBottom + getPixelsRelativeToPercentageOfViewport();
         scrollYPage(win, pixelsToScroll);
       }
+      keyEmulatedByEtherpad = false;
     }
   }
 
-  function extraScrollOfLineWouldMakeItGoesToOutOfViewport(node)
+  function hasSpaceToApplyExtraScrollAndKeepLineCompletelyOnViewport(node)
   {
     var viewportSize = getInnerHeight();
     var lineHeight = node.offsetHeight;
@@ -5303,14 +5286,14 @@ function Ace2Inner(){
 
     // when scrollWhenFocusLineIsOutOfViewport.percentage is 0, the extra scroll is not applied
     if(scrollPercentage === 0){
-      return false;
+      return true;
     }
 
     // if the line height is bigger than 'scrollPercentage * viewportSize' when we make an extra scroll
     // part line will stay out of the viewport
-    var extraScrollOfLineWouldMakeItGoesToOutOfViewport = lineHeight  > (scrollPercentage * viewportSize);
+    var hasSpaceToScrollAndKeepLineCompletelyOnViewport = (scrollPercentage * viewportSize) > lineHeight;
 
-    return extraScrollOfLineWouldMakeItGoesToOutOfViewport;
+    return hasSpaceToScrollAndKeepLineCompletelyOnViewport;
   }
 
   function scrollYPage(win, pixelsToScroll)
@@ -5385,12 +5368,12 @@ function Ace2Inner(){
     }
   }
 
-  function scrollSelectionIntoView(callStack)
+  function scrollSelectionIntoView()
   {
     if (!rep.selStart) return;
     fixView();
     var focusLine = (rep.selFocusAtStart ? rep.selStart[0] : rep.selEnd[0]);
-    scrollNodeVerticallyIntoView(rep.lines.atIndex(focusLine).lineNode, callStack);
+    scrollNodeVerticallyIntoView(rep.lines.atIndex(focusLine).lineNode);
     if (!doesWrap)
     {
       var browserSelection = getSelection();

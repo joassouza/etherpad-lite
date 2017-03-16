@@ -2,6 +2,7 @@ describe('scroll when focus line is out of viewport', function () {
   before(function (done) {
     helper.newPad(function(){
       cleanPad(function(){
+        forceUseMonospacedFont();
         createPadWithSeveralLines(function(){
           resizeEditorHeight();
           done();
@@ -244,35 +245,24 @@ describe('scroll when focus line is out of viewport', function () {
     });
   });
 
-  // In this scenario we avoid the double scroll. When we have a Etherpad Line (rep.lines) that extends to
-  // more than one line on Editor(editor.lines) and the height of the line is bigger than
-  // (scroll amount percentage * viewport height) the editor scrolls up-down every time user edits a line
-  // inside of the viewport. E.g Let's suppose we have a big line that is the size of the viewport, and its
-  // top is above the viewport. When user presses arrow left key, this line will scroll down because the
-  // top is out of the viewport. When it scrolls down, the bottom of line gets below the viewport so when user
-  // presses arrow left key again it scrolls up to make the bottom of line visible. If user presses arrow left
-  // keys more than one time, the editor will keep scrolling up and down
+  // In this scenario we avoid the bouncing scroll. E.g Let's suppose we have a big line that is
+  // the size of the viewport, and its top is above the viewport. When user presses '<-', this line
+  // will scroll down because the top is out of the viewport. When it scrolls down, the bottom of
+  // line gets below the viewport so when user presses '<-' again it scrolls up to make the bottom
+  // of line visible. If user presses arrow keys more than one time, the editor will keep scrolling up and down
   context('when the line height is bigger than the scroll amount percentage * viewport height', function(){
     var scrollOfEditorBeforePressKey;
-    var bigLineNumber = 0;
+    var BIG_LINE_NUMBER = 0;
+    var MIDDLE_OF_BIG_LINE = 51;
     before(function (done) {
-      // create a big line (rep.line) as the editor width is smaller,
-      // the line is wrapped, making 20 editor.lines. The editor shows
-      // 10 lines, so part of line stays out of the viewport
-      createPadWithAbigLineWrapped(this, bigLineNumber, function(){
+      createPadWithALineHigherThanViewportHeight(this, BIG_LINE_NUMBER, function(){
         setScrollPercentageWhenFocusLineIsOutOfViewport(0.5); // set any value to force scroll to outside to viewport
-        var $bigLine = getLine(bigLineNumber);
+        var $bigLine = getLine(BIG_LINE_NUMBER);
 
-        // each line has about 5 chars, we place the caret at the middle of the line
-        helper.selectLines($bigLine, $bigLine, 51, 51);
+        // each line has about 5 chars, we place the caret in the middle of the line
+        helper.selectLines($bigLine, $bigLine, MIDDLE_OF_BIG_LINE, MIDDLE_OF_BIG_LINE);
 
-        // scroll the editor to make to the caret line inside the viewport
-        // and both boundaries out of the viewport. The caret stays in the
-        // editor.line on the top of the viewport
-        var lineHeight = $bigLine.get(0).getBoundingClientRect().height;
-        var middleOfLine = lineHeight/2;
-        scrollPageTo(middleOfLine);
-
+        scrollEditorToLeaveTopAndBottomOfBigLineOutOfViewport($bigLine);
         scrollOfEditorBeforePressKey = getEditorScroll();
 
         // press a key to force to scroll
@@ -295,8 +285,7 @@ describe('scroll when focus line is out of viewport', function () {
     // as the editor.line is inside of the viewport, it should not scroll
     it('should not scroll', function (done) {
       var scrollOfEditorAfterPressKey = getEditorScroll();
-      var editorDoesNotScroll = scrollOfEditorBeforePressKey === scrollOfEditorAfterPressKey;
-      expect(editorDoesNotScroll).to.be(true);
+      expect(scrollOfEditorAfterPressKey).to.be(scrollOfEditorBeforePressKey);
       done();
     });
   });
@@ -350,6 +339,8 @@ describe('scroll when focus line is out of viewport', function () {
   var LEFT_ARROW = 37;
   var RIGHT_ARROW = 39;
   var LINES_ON_VIEWPORT = 10;
+  var WIDTH_OF_EDITOR_RESIZED = 100;
+  var LONG_TEXT_CHARS = 100;
 
   var cleanPad = function(callback) {
     var inner$ = helper.padInner$;
@@ -375,7 +366,8 @@ describe('scroll when focus line is out of viewport', function () {
     }, 4000).done(done);
   };
 
-  var createPadWithAbigLineWrapped = function(test, line, done) {
+  var createPadWithALineHigherThanViewportHeight = function(test, line, done) {
+    var viewportHeight = 160; //10 lines * 16px (height of line)
     test.timeout(5000);
     cleanPad(function(){
       // make the editor smaller to make test easier
@@ -387,16 +379,15 @@ describe('scroll when focus line is out of viewport', function () {
       helper.waitFor(function () {
         var $firstLine = getLine(line);
 
-        // one line has 16px
         var heightOfLine = $firstLine.get(0).getBoundingClientRect().height;
-        return heightOfLine > 300;
+        return heightOfLine >= viewportHeight;
       }, 4000).done(done);
     });
   };
 
   var setLongTextOnLine = function(line) {
     var $line = getLine(line);
-    var longText = 'a'.repeat(100);
+    var longText = 'a'.repeat(LONG_TEXT_CHARS);
     $line.html(longText);
   };
 
@@ -409,7 +400,7 @@ describe('scroll when focus line is out of viewport', function () {
   // this makes about 5 chars per line
   var resizeEditorWidth = function() {
     var chrome$ = helper.padChrome$;
-    chrome$('#editorcontainer').css('width', 100);
+    chrome$('#editorcontainer').css('width', WIDTH_OF_EDITOR_RESIZED);
   };
 
   var resetResizeOfEditorHeight = function() {
@@ -445,6 +436,12 @@ describe('scroll when focus line is out of viewport', function () {
 
   var scrollEditorToBottomOfPad = function() {
     scrollPageTo(BOTTOM_OF_PAGE);
+  };
+
+  var scrollEditorToLeaveTopAndBottomOfBigLineOutOfViewport = function ($bigLine) {
+    var lineHeight = $bigLine.get(0).getBoundingClientRect().height;
+    var middleOfLine = lineHeight/2;
+    scrollPageTo(middleOfLine);
   };
 
   var getLine = function(lineNum) {
@@ -575,6 +572,10 @@ describe('scroll when focus line is out of viewport', function () {
   var getIntValueOfCSSProperty = function($element, property){
     var valueString = $element.css(property);
     return parseInt(valueString) || 0;
+  };
+
+  var forceUseMonospacedFont = function () {
+    helper.padChrome$.window.clientVars.padOptions.useMonospaceFont = true;
   };
 
   var setScrollPercentageWhenFocusLineIsOutOfViewport = function(value) {
