@@ -1176,6 +1176,7 @@ function handleClientReady(client, message)
           "accountPrivs": {
               "maxRevisions": 100
           },
+          "automaticReconnectionTimeout": settings.automaticReconnectionTimeout,
           "initialRevisionList": [],
           "initialOptions": {
               "guestPolicy": "deny"
