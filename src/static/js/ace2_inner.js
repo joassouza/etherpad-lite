@@ -5406,27 +5406,36 @@ function Ace2Inner(){
   {
     var outerDocBody = win.document.getElementById("outerdocbody");
 
+    // TODO use browser if
     // it works on chrome
     var $outerDocBody = $(outerDocBody);
     triggerScrollWithAnimation($outerDocBody, pixelsToScroll, durationOfAnimationToShowFocusline);
 
     // it works on firefox
     var $outerDocBodyParent = $outerDocBody.parent();
-    triggerScrollWithAnimation($outerDocBodyParent, pixelsToScroll, durationOfAnimationToShowFocusline);
+    // triggerScrollWithAnimation($outerDocBodyParent, pixelsToScroll, durationOfAnimationToShowFocusline);
   }
 
   // using a custom queue and clearing it, we avoid creating a queue of scroll animations. So if this function
   // is called twice quickly, only the last one runs.
   function triggerScrollWithAnimation($elem, pixelsToScroll, durationOfAnimationToShowFocusline)
   {
-    // clear the queue of animation
-    $elem.stop("scrollanimation");
-    $elem.animate({
-      scrollTop: '+=' + pixelsToScroll
-    }, {
-      duration: durationOfAnimationToShowFocusline,
-      queue: "scrollanimation"
-    }).dequeue("scrollanimation");
+    var beforeScroll = getScrollY();
+    setTimeout(function() {
+      var afterScroll = getScrollY();
+      var pixelsScrolledByTheBrowser = beforeScroll - afterScroll;
+
+      outerWin.scrollBy(0, pixelsScrolledByTheBrowser);
+      setTimeout(function() {
+        $elem.stop("scrollanimation");
+        $elem.animate({
+          scrollTop: '+=' + pixelsToScroll
+        }, {
+          duration: durationOfAnimationToShowFocusline,
+          queue: "scrollanimation"
+        }).dequeue("scrollanimation");
+      }, 0);
+    }, 60);
   }
 
   // By default, when user makes an edition in a line out of viewport, this line goes
