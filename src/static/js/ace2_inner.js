@@ -75,6 +75,9 @@ function Ace2Inner(){
   var EDIT_BODY_PADDING_TOP = 8;
   var EDIT_BODY_PADDING_LEFT = 8;
 
+  var FORMATTING_STYLES = ['bold', 'italic', 'underline', 'strikethrough'];
+  var SELECT_BUTTON_CLASS = 'selected';
+
   var caughtErrors = [];
 
   var thisAuthor = '';
@@ -2908,6 +2911,9 @@ function Ace2Inner(){
       rep.selFocusAtStart = newSelFocusAtStart;
       currentCallStack.repChanged = true;
 
+      // select the formatting buttons when there is the style applied on selection
+      selectFormattingButtonIfLineHasStyleApplied(rep);
+
       hooks.callAll('aceSelectionChanged', {
         rep: rep,
         callstack: currentCallStack,
@@ -2920,6 +2926,24 @@ function Ace2Inner(){
     }
     return false;
     //console.log("%o %o %s", rep.selStart, rep.selEnd, rep.selFocusAtStart);
+  }
+
+  function selectFormattingButtonIfLineHasStyleApplied (rep) {
+    _.each(FORMATTING_STYLES, function (style) {
+      var hasStyleOnRepSelection = hasAttributeOnSelectionOrCaretPosition(rep, style);
+      var $formattingButton = parent.parent.$('[data-key="' + style + '"]').find('a');
+      $formattingButton.toggleClass(SELECT_BUTTON_CLASS, hasStyleOnRepSelection);
+    })
+  }
+
+  function hasAttributeOnSelectionOrCaretPosition(rep, attributeName) {
+    var hasNotSelection = (rep.selStart[0] == rep.selEnd[0] && rep.selEnd[1] === rep.selStart[1]);
+    var hasAttrib = getAttributeOnSelection(attributeName);
+    if (hasNotSelection) {
+      var attributesOnCaretPosition = documentAttributeManager.getAttributesOnCaret();
+      hasAttrib = _.contains(_.flatten(attributesOnCaretPosition), attributeName);
+    }
+    return hasAttrib;
   }
 
   function doCreateDomLine(nonEmpty)
